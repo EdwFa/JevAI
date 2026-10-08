@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jev в Luke.Sechenov.AI</title>
+  <style>
+    :root {
+      --blue: #004899;
+      --blue-2: #2850a8;
+      --ink: #1c2430;
+      --muted: #5c6775;
+      --line: #d7dee8;
+      --wash: #eef3fb;
+      --paper: #f7f8fa;
+      --warn: #8a4b12;
+      --warn-bg: #fbf3ea;
+      --ok: #0e6b45;
+      --ok-bg: #e8f6ef;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #12161c; color: var(--ink); font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif; }
+    button, .ui { font-family: "Avenir Next", "Segoe UI", sans-serif; }
+    .deck { height: 100%; display: grid; place-items: center; }
+    .stage {
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      position: relative;
+      background: white;
+      overflow: hidden;
+    }
+    .slide {
+      display: none;
+      height: 100%;
+      padding: 3.4% 4.6% 5.4%;
+      flex-direction: column;
+      gap: 0.9%;
+    }
+    .slide.active { display: flex; }
+    .grow p, .grow li { font-size: clamp(17px, 1.72vw, 26px); line-height: 1.38; }
+    .grow h1 { font-size: clamp(30px, 3.35vw, 50px); }
+    .grow h2 { font-size: clamp(24px, 2.55vw, 40px); }
+    .grow .sub, .grow .card p, .grow .stat span, .grow .note, .grow .ok { font-size: clamp(15px, 1.38vw, 21px); }
+    .grow .card { padding: 1.25vw 1.25vw 1.35vw; gap: 0.7vw; }
+    .grow .card strong { font-size: clamp(15px, 1.35vw, 22px); }
+    .grow .stat { padding: 1.15vw 1.15vw 1.25vw; }
+    .grow .stat b { font-size: clamp(20px, 2.05vw, 32px); }
+    .grow table { font-size: clamp(15px, 1.32vw, 20px); }
+    .grow th, .grow td { padding: 0.72vw 0.7vw; }
+    .grow .flow span { padding: 0.85vw 0.65vw; font-size: clamp(14px, 1.2vw, 19px); }
+    .grow .body { gap: 1.05vw; }
+    .spread .body { justify-content: space-evenly; }
+    .body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1.05vw; }
+    .grid.fill { align-items: stretch; }
+    .kicker {
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(11px, 1.15vw, 15px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      font-weight: 600;
+      margin: 0;
+    }
+    h1 {
+      font-size: clamp(28px, 3.3vw, 46px);
+      line-height: 1.12;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: clamp(22px, 2.4vw, 34px);
+      line-height: 1.15;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+    p, li { font-size: clamp(17px, 1.65vw, 23px); line-height: 1.38; margin: 0; }
+    .sub { color: var(--muted); font-size: clamp(13px, 1.2vw, 16px); line-height: 1.4; }
+    .grid { display: grid; gap: 1.2vw; align-content: start; align-items: start; }
+    .g3 { grid-template-columns: repeat(3, 1fr); }
+    .g2 { grid-template-columns: 1.15fr 0.85fr; }
+    .g4 { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      background: var(--paper);
+      border-top: 3px solid var(--blue);
+      padding: 1.25vw 1.25vw 1.35vw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7vw;
+    }
+    .card strong { font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: clamp(14px, 1.25vw, 18px); }
+    .card p { font-size: clamp(14px, 1.25vw, 17px); }
+    .stat {
+      background: var(--wash);
+      padding: 1.15vw 1.15vw 1.25vw;
+    }
+    .stat b {
+      display: block;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(18px, 2vw, 28px);
+      color: var(--blue);
+      font-weight: 650;
+      letter-spacing: -0.03em;
+    }
+    .stat span { display: block; margin-top: 0.35vw; color: var(--muted); font-size: clamp(12px, 1.1vw, 15px); line-height: 1.3; }
+    table { width: 100%; border-collapse: collapse; font-size: clamp(12px, 1.12vw, 15px); line-height: 1.3; }
+    table.fit { height: 100%; }
+    th, td { text-align: left; vertical-align: top; padding: 0.55vw 0.65vw; border-bottom: 1px solid var(--line); }
+    th {
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-weight: 650;
+      color: var(--blue);
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      border-top: 3px solid var(--blue);
+    }
+    tr:last-child td { border-bottom: 0; }
+    .note {
+      background: var(--warn-bg);
+      color: var(--warn);
+      padding: 0.7vw 0.9vw;
+      font-size: clamp(13px, 1.15vw, 16px);
+      line-height: 1.35;
+    }
+    .ok {
+      background: var(--warn-bg);
+      color: var(--warn);
+      padding: 0.7vw 0.9vw;
+      font-size: clamp(13px, 1.15vw, 16px);
+      line-height: 1.35;
+    }
+    .flow { display: flex; gap: 0.45vw; align-items: stretch; flex-wrap: nowrap; }
+    .flow span {
+      flex: 1;
+      background: var(--wash);
+      padding: 0.7vw 0.6vw;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(12px, 1.05vw, 15px);
+      line-height: 1.25;
+      text-align: center;
+    }
+    .flow span.hot { background: var(--paper); color: var(--blue); border-top: 3px solid var(--blue); }
+    ol.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 0.7vw; }
+    ol.steps li { padding-left: 0.2em; }
+    .formula {
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      border-top: 3px solid var(--blue);
+      padding: 0.8vw 1vw;
+      font-size: clamp(14px, 1.35vw, 18px);
+      letter-spacing: 0.01em;
+    }
+    .rule {
+      background: var(--paper);
+      color: var(--ink);
+      border-top: 3px solid var(--blue);
+      padding: 1vw 1.2vw;
+    }
+    .rule b {
+      display: block;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(18px, 1.7vw, 26px);
+      font-weight: 650;
+      color: var(--blue);
+      margin-bottom: 0.35vw;
+    }
+    .rule p { color: var(--ink); }
+    .zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8vw; }
+    .zones div { padding: 0.8vw 0.9vw; background: var(--paper); }
+    .zones b { display: block; font-family: "Avenir Next", "Segoe UI", sans-serif; margin-bottom: 0.3vw; color: var(--blue); }
+    .chrome {
+      position: absolute;
+      left: 5.2%;
+      right: 5.2%;
+      bottom: 2.4%;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(11px, 1vw, 13px);
+      color: var(--muted);
+    }
+    .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: #e6ebf2; }
+    .bar i { display: block; height: 100%; background: var(--blue); }
+    .help {
+      position: fixed;
+      top: 12px;
+      right: 14px;
+      color: #c5ced8;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+    .figure {
+      margin: 0 auto;
+      width: fit-content;
+      max-width: 100%;
+      background: #14181e;
+      line-height: 0;
+    }
+    .figure img {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: min(32vh, 340px);
+    }
+  </style>
+</head>
+<body>
+  <div class="help">← → или пробел · N заметки</div>
+  <div class="deck">
+    <div class="stage" id="stage">
+
+      <section class="slide grow spread active" data-notes="Сначала технология, потом Luke. System One возвращает решение для кода. Jev — первая такая модель. Текст по-прежнему пишет Qwen.">
+        <p class="kicker">TypeSafe · System One · 1 / 20</p>
+        <h1>System One: суждение, которое читает код</h1>
+        <div class="body">
+        <p>Большие языковые модели пишут текст для человека. Когда суждение нужно программе, этот текст приходится принуждать к структуре и снова разбирать. System One сделан для другого: быстрое структурированное решение, которым код пользуется напрямую.</p>
+        <div class="flow">
+          <span>state и вопросы</span>
+          <span class="hot">один запрос</span>
+          <span>каждый вопрос против state, параллельно</span>
+          <span>тип, вероятности, confidence</span>
+          <span>код ветвит, сортирует, маршрутизирует</span>
+        </div>
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>Jev — первая модель класса</strong>
+            <p>Флагман TypeSafe и первая модель System One. На вход идёт state: строка, JSON или массив строк. На выход — поля заданного типа. Генерации текста нет, разбирать prose не нужно.</p>
+          </article>
+          <article class="card">
+            <strong>Вопросы против одного state</strong>
+            <p>Каждый вопрос считается отдельно и параллельно. Новый вопрос почти не меняет время ответа и не создаёт context-rot. У Choice и Score есть confidence: по нему код решает, действовать ли.</p>
+          </article>
+          <article class="card">
+            <strong>Один вызов</strong>
+            <p>POST <code>api.typesafe.ai/v1/systemone</code>. Стабильный релиз <code>jev-1.13.0</code>, алиас <code>jev-latest</code>. Ключ — <code>TYPESAFE_API_KEY</code>. Поле <code>model</code> в ответе называет версию, даже если в запросе стоял алиас.</p>
+          </article>
+        </div>
+        <div class="grid g4">
+          <div class="stat"><b>Без текста</b><span>Модель не пишет ответ и не объясняет рассуждение. Выход — значение заданного типа</span></div>
+          <div class="stat"><b>$0.042</b><span>За 1 млн входных токенов. Выходные токены бесплатны</span></div>
+          <div class="stat"><b>64k</b><span>Токенов на запрос. 32k на state и самый длинный вопрос</span></div>
+          <div class="stat"><b>Калибровка</b><span>Введение отсылает к обучению на калиброванные решения, а не на приятный текст</span></div>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Jev не пишет текст, не пишет код и не ведёт диалог. Агент для кода — это языковая модель с инструментами. Настройки model jev-latest, которая подменит такого агента, нет: задачи разные.">
+        <p class="kicker">System One · 2 / 20</p>
+        <h2>Jev — не чат-бот и не модель для кода</h2>
+        <p>Jev — модель System One. Она не генерирует текст, не пишет код и не поддерживает диалог. На вход — состояние и набор типизированных вопросов. На выход — структурированные ответы, которые код читает напрямую.</p>
+        <div class="body">
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>choice</strong>
+            <p>Один вариант из заданного списка. Рядом вероятность каждого варианта и confidence.</p>
+          </article>
+          <article class="card">
+            <strong>score</strong>
+            <p>Позиция на шкале, которую задаёт код. Одна ось, уровни описаны заранее.</p>
+          </article>
+          <article class="card">
+            <strong>noul</strong>
+            <p>Число от 0 до 1 для утверждения «верно / неверно». Отдельного confidence нет.</p>
+          </article>
+        </div>
+        <div class="grid g2 fill">
+          <article class="card">
+            <strong>Агент, который пишет код</strong>
+            <p>Языковая модель читает текст, вызывает инструменты и правит файлы по инструкции на естественном языке. Так устроены чат и автодополнение.</p>
+          </article>
+          <article class="card">
+            <strong>Jev этого не делает</strong>
+            <p>Нет настройки <code>model: "jev-latest"</code>, которая превратит агента для кода в агента на базе Jev. Это две разные задачи.</p>
+          </article>
+        </div>
+        <p class="note">Чат-бот пишет ответ человеку. Jev возвращает поле, по которому ветвится программа. Подмена одной системы другой не предусмотрена.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Три примитива, как программные: модульные, сочетаемые, структурированные, надёжные, быстрые. Choice и Score несут confidence. Noul — одно число 0…1. Все три едут одним вызовом.">
+        <p class="kicker">TypeSafe · 3 / 20</p>
+        <h2>TypeSafe primitives</h2>
+        <p>TypeSafe отдаёт три ИИ-примитива. Документация ставит их рядом с программными: модульные, сочетаемые, структурированные, надёжные и быстрые. У каждого свой тип вопроса и свой тип ответа.</p>
+        <div class="body">
+        <div class="flow">
+          <span>модульные</span>
+          <span>сочетаемые</span>
+          <span>структурированные</span>
+          <span>надёжные</span>
+          <span>быстрые</span>
+        </div>
+        <table>
+          <thead><tr><th>Примитив</th><th>Вопрос</th><th>Что возвращает</th></tr></thead>
+          <tbody>
+            <tr><td>Choice</td><td>Выбрать один вариант из списка</td><td><code>choice</code>, <code>probabilities</code>, <code>confidence</code></td></tr>
+            <tr><td>Score</td><td>Поставить state на рубрику</td><td><code>score</code>, <code>probabilities</code>, <code>confidence</code></td></tr>
+            <tr><td>Noul</td><td>Верно ли это утверждение</td><td><code>noul</code> — число от 0 до 1</td></tr>
+          </tbody>
+        </table>
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>Choice в Quick start</strong>
+            <p>Какая команда берёт тикет. Ответ <code>technical</code> с вероятностью 0.85, рядом billing 0.15 и sales 0.0. Confidence 0.78: второй вариант ещё держит массу.</p>
+          </article>
+          <article class="card">
+            <strong>Score в том же ответе</strong>
+            <p>Шкала: спокоен, раздражён, очень зол. Ответ 1.0, уровень «раздражён, но вежлив», confidence 1.0. Вся масса на одном уровне рубрики.</p>
+          </article>
+          <article class="card">
+            <strong>Noul в том же ответе</strong>
+            <p>«Сообщение срочное» вернуло 1.0. Отдельного confidence нет: близость к 0.5 и есть неуверенность. На три вопроса ушло 392 входных токена и 65 выходных.</p>
+          </article>
+        </div>
+        <p>Все три типа смешиваются в одном вызове. Каждый вопрос считается параллельно и изолированно против одного state, поэтому новый вопрос почти не увеличивает время и не создаёт context-rot. В Quick start этот state — тикет про Stripe: три дня не подключается оплата, клиент теряет продажи и просит помочь срочно.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Один фрагмент и три суждения в одном POST. Choice выбирает тип исследования, Score — насколько прямо текст отвечает на клинический вопрос, Noul — есть ли в тексте конкретное утверждение. Код складывает поля. Это схема вызова: ответ Jev мы здесь не замеряли.">
+        <p class="kicker">TypeSafe · 4 / 20</p>
+        <h2>Пример работы примитивов</h2>
+        <p>Один фрагмент статьи. Choice, Score и Noul со слайда 3 задают по нему три разных суждения. Модель не пишет вывод: код читает три поля из одного вызова.</p>
+        <div class="body">
+        <div class="rule">
+          <b>State — текст фрагмента. Вопрос живёт в примитивах</b>
+          <p>Клинический вопрос программы: снижает ли эмпаглифлозин госпитализации по сердечной недостаточности при сахарном диабете 2 типа. В state только фрагмент: «In a randomized, double-blind trial, 7,020 patients with type 2 diabetes and cardiovascular disease received empagliflozin or placebo. Hospitalization for heart failure was lower with empagliflozin (hazard ratio 0.65, 95% CI 0.50 to 0.85).»</p>
+        </div>
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>Choice — тип исследования</strong>
+            <p>Варианты: randomized trial, cohort, case report, review. Код пускает фрагмент в контур испытаний, только если <code>choice</code> равен randomized trial и <code>confidence</code> выше порога.</p>
+          </article>
+          <article class="card">
+            <strong>Score — прямота ответа</strong>
+            <p>Четыре уровня: не об этом вопросе; препарат есть, исхода нет; исход есть без сравнения; есть сравнение с контролем. Код оставляет верхние уровни. Дробный <code>score</code> — позиция на рубрике, не величина эффекта.</p>
+          </article>
+          <article class="card">
+            <strong>Noul — утверждение в тексте</strong>
+            <p>«The text reports fewer heart-failure hospitalizations with empagliflozin than with placebo.» Ответ — число от 0 до 1. Около 0.5 код не действует. Это не p-value и не клинический эффект.</p>
+          </article>
+        </div>
+        <p class="note">Три вопроса едут одним вызовом и считаются независимо. Новых фактов они не приносят: фрагмент уже в state. Цифр ответа здесь нет — это схема вызова, не замер Luke и не Quick start.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="RLHF учит нравиться людям и порождает чат. RLVR учит проверяемым задачам вроде математики, но медленнее и дороже. RLCD учит TypeSafe вернуть решение и вероятность, без сгенерированного текста. Jev обучен третьим способом.">
+        <p class="kicker">TypeSafe · 5 / 20</p>
+        <h2>Три технологии обучения</h2>
+        <div class="body">
+        <figure class="figure">
+          <img src="assets/training-paths.png" alt="Схема обучения: LM и LLM, затем ветка RLHF к чат-моделям и RLVR к моделям рассуждения. От LLM отдельно ответвляется RLCD — обучение калиброванным решениям.">
+        </figure>
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>RLHF</strong>
+            <p>Обучение с подкреплением на основе обратной связи от человека превратило предварительно обученные модели в чат-ботов. Оно обучает модели генерировать ответы, которые нравятся людям.</p>
+          </article>
+          <article class="card">
+            <strong>RLVR</strong>
+            <p>Обучение с подкреплением с использованием верифицируемых вознаграждений позволило создать модели, которые хорошо справляются с такими задачами, как решение математических примеров, но работают медленнее и требуют больших затрат.</p>
+          </article>
+          <article class="card">
+            <strong>RLCD</strong>
+            <p>Обучение с подкреплением для принятия взвешенных решений обучает TypeSafe возвращать решения и взвешенные вероятности вместо сгенерированного текста.</p>
+          </article>
+        </div>
+        <p>На схеме предобученные модели расходятся: вверх RLHF делает чат, от него RLVR — рассуждение. Вниз RLCD ведёт к калиброванным решениям. Этой веткой обучен Jev.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Jev ставят внутрь агента, которого пишет обычная языковая модель. Четыре повода: маршрут с уверенностью, шкала и действие, проверка утверждения до действия, типизированный вызов вместо просьбы вернуть JSON.">
+        <p class="kicker">System One · 6 / 20</p>
+        <h2>Когда стоит обратиться к Jev</h2>
+        <p>Jev не пишет код. Внутри агента или приложения, которое собирает генератор кода, она часто и есть нужный инструмент: код получает суждение и сам решает, что делать дальше.</p>
+        <div class="body">
+        <div class="grid g2 fill">
+          <article class="card">
+            <strong>Направить по одному из адресов</strong>
+            <p>Запрос уходит в один из заранее известных маршрутов. Вместе с выбором приходит уверенность, насколько точно он направлен.</p>
+            <p class="sub">Choice: список адресов, probabilities и confidence. Код решает, проводить ли маршрут или отдать человеку.</p>
+          </article>
+          <article class="card">
+            <strong>Оценить по шкале и действовать</strong>
+            <p>Срочность, качество или риск ложатся на шкалу, которую задаёт код. Дальнейшее действие зависит от балла и уверенности.</p>
+            <p class="sub">Score: одна ось. Порог, после которого код что-то делает, живёт в программе.</p>
+          </article>
+          <article class="card">
+            <strong>Проверить утверждение до действия</strong>
+            <p>Документ, сообщение или запись сверяют с конкретным утверждением. Действие начинается только после этой проверки.</p>
+            <p class="sub">Noul: вероятность от 0 до 1. Близость к 0.5 — повод не действовать.</p>
+          </article>
+          <article class="card">
+            <strong>Убрать просьбу «верни JSON»</strong>
+            <p>Ненадёжную подсказку языковой модели, которая должна вернуть JSON, заменяют вызовом. Ответ уже приходит типизированными значениями.</p>
+            <p class="sub">Код читает choice, score или noul. Разбирать prose, чтобы достать структуру, больше не нужно.</p>
+          </article>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Главное: факты в state, суждения в questions. Запрос на возврат и политика лежат в состоянии. Вопросы отдельно: просил ли клиент возврат и подтверждает ли это политика.">
+        <p class="kicker">System One · 7 / 20</p>
+        <h2>Состояние</h2>
+        <div class="body">
+        <div class="rule">
+          <b>Отделите содержание от вопросов</b>
+          <p>Состояние содержит содержание и подтверждающие факты. Вопросы определяют, какие суждения модель выносит по этому материалу.</p>
+        </div>
+        <div class="grid g2 fill">
+          <article class="card">
+            <strong>В состоянии</strong>
+            <p>Запрос на возврат средств и политика. Сообщение, заказ, правило — всё, с чем модель сравнивает части между собой.</p>
+            <p class="sub">Тикет «Duplicate charge», два списания по $49 и фраза «Duplicate charges are eligible for a refund» — один объект.</p>
+          </article>
+          <article class="card">
+            <strong>В вопросах</strong>
+            <p>Запрашивал ли клиент возврат средств. Подтверждает ли это политика. Choice, score и noul спрашивают об уже лежащем материале.</p>
+            <p class="sub">Новых фактов вопрос не приносит. Один вызов смотрит одно состояние, вопросы считаются независимо.</p>
+          </article>
+        </div>
+        <table>
+          <thead><tr><th>Формат state</th><th>Когда</th><th>Пример</th></tr></thead>
+          <tbody>
+            <tr><td>Строка</td><td>Одно сообщение или отрывок</td><td><code>My card was charged twice.</code></td></tr>
+            <tr><td>Объект</td><td>Именованные поля. Так устроены большинство запросов</td><td><code>{"message": "My card was charged twice.", "order_id": "A-104"}</code></td></tr>
+            <tr><td>Массив</td><td>Последовательность сообщений</td><td><code>["Hi", "My customer number is TS1337.", "My card was charged twice."]</code></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Слоганы 150 мс, 100× и 40–200× — заявление компании. На слайд эффекта кладём только cookbook.">
+        <p class="kicker">System One · 8 / 20</p>
+        <h2>Атомарный вопрос, сборка в коде</h2>
+        <div class="body">
+        <div class="grid g2 fill">
+          <article class="card">
+            <strong>Вопросы не мешают друг другу</strong>
+            <p>Введение: все вопросы одного вызова считаются параллельно и изолированно. Добавление вопроса почти не меняет время ответа и не создаёт context-rot.</p>
+            <p>Cookbook Parallel questions это проверил: 13 вопросов к статье GDPR одним вызовом и тринадцатью отдельными на пяти повторах дали те же средние.</p>
+            <p class="sub">Ключ вопроса модель не видит. В лог пишется <code>model</code> из ответа, чтобы порог не уехал вместе с алиасом.</p>
+          </article>
+          <article class="card">
+            <strong>Один вопрос — одно суждение</strong>
+            <p>Документация сравнивает вопрос с быстрой оценкой знающего человека за несколько секунд. Если факторов несколько, их спрашивают отдельно и складывают в коде.</p>
+            <p>Пример из введения: не «оцени питч», а отдельно размер рынка, техническая осуществимость и отличие. Вес меняется коэффициентом в коде, а не переписыванием промпта.</p>
+            <p class="sub">Калибровка групповая: среди ответов с вероятностью 0.8 верных около 80%. Один такой ответ этим не гарантирован.</p>
+          </article>
+        </div>
+        <p>Введение сравнивает вопрос с быстрой оценкой знающего человека. Если факторов несколько, каждый становится отдельным примитивом с третьего слайда, а вес живёт коэффициентом в коде. Когда приоритет меняется, переписывается формула, а не промпт.</p>
+        <p class="note">«Около 150 мс», «в 100 раз дешевле» и «ускорение в 40–200 раз» — формулировки TypeSafe, не замер cookbook и не замер Luke.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Три роли не смешивать. Jev не пишет статью. Код не отдаёт Jev даты, квартили и мощность.">
+        <p class="kicker">Модель · 9 / 20</p>
+        <h2>Три роли в стеке Luke</h2>
+        <div class="body">
+        <table>
+          <thead>
+            <tr><th>Роль</th><th>Кто</th><th>Что делает по введению TypeSafe</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Текст для человека</td><td>Qwen через Together</td><td>План, статья, сводка, рецензия, критика прозой. Это работа LLM, как её описывает введение.</td></tr>
+            <tr><td>Суждение для кода</td><td>Jev, <code>jev-latest</code></td><td>Метка, балл, вероятность. Код читает поле ответа и ветвится. Разбор JSON из prose не нужен.</td></tr>
+            <tr><td>Точный расчёт</td><td>Наш код</td><td>Даты, квартили, существование PMID, рецепт Stats Copilot, мощность. Сложение осей гипотезы тоже здесь: коэффициенты не в промпте.</td></tr>
+          </tbody>
+        </table>
+        <div class="grid g3">
+          <div class="stat"><b>Ветвление</b><span>choice выбирает путь: yes оставить, no отсечь, says_nothing отдать человеку</span></div>
+          <div class="stat"><b>Сортировка</b><span>score упорядочивает шортлист. Порог 7 в Fact Search — правило кода, не модели</span></div>
+          <div class="stat"><b>Маршрут</b><span>confidence решает, действовать или проверить. Ключ Jev — TYPESAFE_API_KEY</span></div>
+        </div>
+        <div class="grid g3">
+          <article class="card">
+            <strong>Несколько секунд</strong>
+            <p>Введение описывает вопрос как gut-check: суждение, которое знающий человек выносит за несколько секунд, когда контекст уже перед ним.</p>
+          </article>
+          <article class="card">
+            <strong>Длинная цепочка разбирается</strong>
+            <p>Вопрос с долгим рассуждением или с несколькими независимыми факторами введение просит разложить. Каждая оценка тогда остаётся узкой.</p>
+          </article>
+          <article class="card">
+            <strong>Питч из введения</strong>
+            <p>Размер рынка, техническая осуществимость и отличие спрашиваются отдельно. Сдвиг приоритета — новый коэффициент в формуле кода.</p>
+          </article>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Один score — одна ось. Novelty и support гипотезы не склеивать в одну шкалу. Дробный score годится для порога, не как точная величина.">
+        <p class="kicker">Luke · 10 / 20</p>
+        <h2>Те же примитивы в наших вопросах</h2>
+        <p class="sub">Choice, Score и Noul с третьего слайда. Здесь — на какие решения Luke они садятся.</p>
+        <div class="body">
+        <div class="grid g3 fill">
+          <article class="card">
+            <strong>choice — выбрать из списка</strong>
+            <p>Возврат: <code>choice</code>, <code>probabilities</code>, <code>confidence</code>. Опции неупорядочены. Надёжно примерно до 240 вариантов.</p>
+            <p>У нас: фрагмент yes / close / no. Цитата supports / contradicts / says_nothing.</p>
+            <p class="sub">В Quick start победитель technical при 0.85, но confidence 0.78: второй вариант ещё держит 0.15.</p>
+          </article>
+          <article class="card">
+            <strong>score — позиция на рубрике</strong>
+            <p>Возврат: <code>score</code>, <code>legend</code>, <code>probabilities</code>, <code>confidence</code>. Уровни описываем мы, не больше 10, одна ось.</p>
+            <p>У нас: релевантность фрагмента. Novelty и support гипотезы — два отдельных score.</p>
+            <p class="sub">Балл может лежать между уровнями. В Quick start 1.0 значит ровно второй уровень шкалы, не «единица из десяти».</p>
+          </article>
+          <article class="card">
+            <strong>noul — верно ли утверждение</strong>
+            <p>Возврат: одно число 0…1. Отдельного confidence нет. Близость к 0.5 и есть неуверенность.</p>
+            <p>У нас: «тезис есть в процитированном фрагменте», «гипотеза уже встречалась в найденных работах».</p>
+            <p class="sub">Порог ставит код по цене ложного «да». В Quick start срочность вернулась как 1.0.</p>
+          </article>
+        </div>
+        <div class="grid g2">
+          <article class="card">
+            <strong>Один вызов из Quick start</strong>
+            <p>State — текст тикета. В questions сразу три ключа: department как choice, frustration как score, is_urgent как noul. Ответ приходит под теми же ключами. Модель ключи не читает.</p>
+          </article>
+          <article class="card">
+            <strong>Что введение обещает про пакет</strong>
+            <p>Добавление вопроса почти не увеличивает время и не создаёт context-rot: каждый вопрос считается отдельно против того же state. Поэтому choice и score фрагмента должны ехать одним POST.</p>
+          </article>
+        </div>
+        <div class="grid g3">
+          <div class="stat"><b>Playground</b><span>Любой текст как state. Сначала один noul, затем choice и score в тот же вызов</span></div>
+          <div class="stat"><b>Тело POST</b><span>state, model, questions. Ключ в заголовке Authorization: Bearer</span></div>
+          <div class="stat"><b>Python SDK</b><span>typesafe-sdk, Python 3.10+. Клиент берёт TYPESAFE_API_KEY и зовёт jev-latest</span></div>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide" data-notes="Для Fact Search потеря статьи дороже лишнего фрагмента, поэтому veto только при P(no) ≥ 0.8. Для цитаты ложное подтверждение дороже проверки, поэтому автопринятие с confidence 0.8.">
+        <p class="kicker">Функции · 11 / 20</p>
+        <h2>Confidence решает, действовать ли</h2>
+        <div class="body">
+        <p class="formula">choice: (pmax − 1/n) / (1 − 1/n) · score учитывает расстояние от пика · noul: |2p − 1|, если нужен общий порог</p>
+        <p>Введение: confidence есть у choice и score, чтобы код решил, действовать ли. Ровный разброс даёт 0, вся масса на одном исходе даёт 1. У score спор соседних уровней снижает confidence слабее, чем спор концов шкалы. У noul отдельного поля нет.</p>
+        <div class="zones" style="flex: 1;">
+          <div><b>Высокое — действовать</b>Модель собрала вероятность в один исход. Цитату можно пометить «подтверждено» только от 0.8: ложное подтверждение в статье дороже проверки.</div>
+          <div><b>Среднее — проверить</b>Ответ есть, но масса размазана. В Quick start technical победил с 0.85, а confidence всего 0.78, потому что billing ещё держит 0.15.</div>
+          <div><b>Низкое — не действовать</b>Вопрос не ложится на state или варианты равновероятны. Фрагмент Fact Search выбрасывается только при P(no) ≥ 0.8: потеря статьи дороже лишнего фрагмента.</div>
+        </div>
+        <div class="grid g2">
+          <div class="stat"><b>0.78 и 1.0</b><span>Один и тот же тикет Quick start: отдел неуверен, раздражение уверенно. Пороги поэтому разные у разных вопросов.</span></div>
+          <div class="stat"><b>Группа, не один ответ</b><span>Вероятность 0.8 означает около 80% верных в такой группе предсказаний. Отдельный ответ этим не обещан.</span></div>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Четыре шаблона TypeSafe. Сложное поведение собирается из атомарных решений. Веер — один POST. Уверенность — вторая ось. Составная оценка — коэффициенты в коде. Намерение — choice в обработчик.">
+        <p class="kicker">TypeSafe · 12 / 20</p>
+        <h2>Архитектурные шаблоны</h2>
+        <p>TypeSafe работает внутри большей системы. Сложное поведение собирается из дискретных атомарных решений. Шаблоны ниже рассчитаны на тех, кто уже знает примитивы и confidence.</p>
+        <div class="body">
+        <table>
+          <thead><tr><th>Шаблон</th><th>Что делает</th><th>Выигрыш</th></tr></thead>
+          <tbody>
+            <tr><td>Спекулятивный веерный запрос</td><td>Много вопросов одним вызовом, в том числе впрок. Код сам решает, какие ответы сейчас нужны</td><td>Цена, скорость</td></tr>
+            <tr><td>Маршрутизация с учётом достоверности</td><td>Confidence — вторая ось решения. Система осторожнее там, где ошибка дорогая</td><td>Надёжность, безопасность</td></tr>
+            <tr><td>Комплексная оценка</td><td>Несколько осей анализа код складывает в одну оценку. Веса живут в формуле, не в промпте</td><td>Цена, надёжность, скорость</td></tr>
+            <tr><td>Маршрутизация по намерениям</td><td>Намерение классифицируется и уходит нужному обработчику</td><td>Цена, скорость</td></tr>
+          </tbody>
+        </table>
+        <div class="grid g2 fill">
+          <article class="card">
+            <strong>Веер и составная оценка</strong>
+            <p>Choice и score фрагмента едут одним POST: лишний вопрос почти не стоит отдельно. Novelty и support гипотезы — две оси, их сумма считается в коде.</p>
+          </article>
+          <article class="card">
+            <strong>Уверенность и намерение</strong>
+            <p>Порог confidence решает, действовать или отдать человеку. Choice типа дизайна может выбрать обработчик, а дальше работает уже написанный route_recipe.</p>
+          </article>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Веер из документации: все вопросы одним POST, в том числе те, что нужны только на одной ветке. Код после ответа игнорирует лишние и не делает второй вызов. Медицинский пример — схема маршрута, не замер Jev.">
+        <p class="kicker">TypeSafe · 13 / 20</p>
+        <h2>Спекулятивный веерный запрос</h2>
+        <p>В один вызов кладут все вопросы, которые системе могут понадобиться, включая впрок. Они считаются параллельно, поэтому лишний почти не увеличивает время. Что из ответов читать, решает код.</p>
+        <div class="body">
+        <div class="rule">
+          <b>Абстракт ещё не разобран</b>
+          <p>State — фрагмент про эмпаглифлозин и госпитализации по сердечной недостаточности. Тип работы заранее неизвестен, поэтому рядом с вопросом о типе в том же POST лежат вопросы для испытания и для обзора. Если пришло испытание, ответы про обзор код не открывает.</p>
+        </div>
+        <table>
+          <thead><tr><th>Вопрос</th><th>Примитив</th><th>Когда код его читает</th></tr></thead>
+          <tbody>
+            <tr><td>Тип работы: trial, cohort, review, animal study</td><td>Choice</td><td>Всегда. От него зависит, какие поля открывать</td></tr>
+            <tr><td>Участники были рандомизированы</td><td>Noul</td><td>Только если choice — trial</td></tr>
+            <tr><td>Прямота описания госпитализаций по СН</td><td>Score</td><td>Только для trial или cohort</td></tr>
+            <tr><td>В тексте есть стратегия поиска</td><td>Noul</td><td>Только если choice — review</td></tr>
+            <tr><td>Насколько фрагмент отвечает на вопрос о госпитализациях</td><td>Score</td><td>Всегда, на любой ветке</td></tr>
+          </tbody>
+        </table>
+        <p class="note">В документации так разбирают тикет: тяжесть бага и шаги воспроизведения читают только для bug report, запрос возврата — только для billing, раздражение — всегда. Здесь та же развилка. Второй вызов не нужен. Цифр ответа нет: это схема, не замер.</p>
+        </div>
+      </section>
+
+      <section class="slide" data-notes="Форма важнее отрасли. Наш код выбирает форму, Jev заполняет её. Научный раздел карты — на следующем слайде после эффекта, здесь общая карта.">
+        <p class="kicker">Документация TypeSafe · 14 / 20</p>
+        <h2>Десять форм решения</h2>
+        <p class="sub">Карта TypeSafe делит задачи по форме ответа. Введение добавляет правило: форма должна быть атомарной, несколько факторов спрашиваются отдельно и складываются в коде.</p>
+        <div class="body">
+        <table class="fit">
+          <thead><tr><th>Форма</th><th>Когда</th><th>Пример из документации</th></tr></thead>
+          <tbody>
+            <tr><td>Classification</td><td>Побеждает одна известная категория</td><td>Интент, тема, тип риска</td></tr>
+            <tr><td>Detection</td><td>Нужна вероятность свойства</td><td>Срочность, jailbreak, персональные данные</td></tr>
+            <tr><td>Scoring</td><td>Ответ лежит на рубрике</td><td>Тяжесть, релевантность, качество</td></tr>
+            <tr><td>Routing</td><td>Категория выбирает следующий код</td><td>Эскалация, выбор модели, очередь</td></tr>
+            <tr><td>Search и retrieval</td><td>Найти или отобрать контекст</td><td>Семантический поиск, RAG</td></tr>
+            <tr><td>Ranking</td><td>Упорядочить по смыслу</td><td>Выдача, кандидаты</td></tr>
+            <tr><td>Verification</td><td>Проверить известный тип сбоя</td><td>Цитата, политика, ошибка вызова инструмента</td></tr>
+            <tr><td>Feature extraction</td><td>Обычной модели нужны признаки из текста</td><td>Намерение, риск оттока</td></tr>
+            <tr><td>Structured extraction</td><td>Поля известны заранее</td><td>Атрибуты, даты, метки документа</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Каждую цифру называть вместе с выборкой. 18% и 90% — не обещание для наших статей. Всё это jev-1.12, август–сентябрь 2026.">
+        <p class="kicker">Документация TypeSafe · 15 / 20</p>
+        <h2>Опубликованный эффект, jev-1.12</h2>
+        <div class="body">
+        <table>
+          <thead><tr><th>Cookbook</th><th>Выборка</th><th>Эффект</th></tr></thead>
+          <tbody>
+            <tr><td>Re-ranking, CLERC</td><td>40 запросов, шортлист 30, корпус 3565</td><td>Top-1: 5% → 18%. Top-5: 15% → 35%. Top-10: 38% → 62%. 1200 вызовов, $0.0645</td></tr>
+            <tr><td>Parallel questions</td><td>GDPR, ~54 тыс. знаков, 13 вопросов, 5 повторов</td><td>Один POST $0.000497 / 0.27 с против $0.006090 / 2.71 с. В 12.2 раза дешевле, в 10 раз быстрее, ответы те же</td></tr>
+            <tr><td>Citation check</td><td>RFC 7519, 8 цитат, 16 августа 2026</td><td>4 верные: supports при 0.93–0.99. Подделка поймана кодом. Противоречие при 0.99. Две слабые ушли человеку</td></tr>
+            <tr><td>Confidence</td><td>60 отчётов 10-K, 75 групп, порог 0.9</td><td>Уверенная половина: 27/30. Неуверенная как группа: 12/30. После отката на раздел полезных ответов 48/60</td></tr>
+            <tr><td>RAG passages</td><td>81 пассаж, top-12, 4 noul</td><td>Инструкция была top-1 по сходству 0.584 и получила injection 0.99. Чужие «lifetime» получили relevance ≤ 0.08</td></tr>
+          </tbody>
+        </table>
+        <div class="grid g3">
+          <div class="stat"><b>Шортлист</b><span>Re-ranking поднимает уже найденный пассаж. Новый документ поиск не добавляет. Fact Search устроен так же.</span></div>
+          <div class="stat"><b>Один документ</b><span>Пакет вопросов дешевле, потому что state читается один раз. Введение обещает ту же независимость ответов.</span></div>
+          <div class="stat"><b>Не наш замер</b><span>Цитаты на 8 примерах — форма проверки, не бенчмарк. Долю верных цитат Luke эти числа не предсказывают.</span></div>
+        </div>
+        <p>Введение объясняет эти три числа одним правилом. Пакет дешевле, потому что вопросы одного вызова читают один state: Parallel questions сравнивает такой POST с тринадцатью отдельными. Confidence нужен, чтобы неуверенную половину 10-K откатить на раздел и получить 48 из 60, а не выбросить. Цитата устроена как choice: поддержка, противоречие и «источник молчит» — разные исходы одного списка, код читает поле.</p>
+        </div>
+      </section>
+
+      <section class="slide" data-notes="Пять пунктов раздела Scientific discovery. Граф знаний честно отложить: садиться не на что.">
+        <p class="kicker">Документация TypeSafe · 16 / 20</p>
+        <h2>Научные кейсы и куда они ложатся у нас</h2>
+        <p class="sub">Раздел Scientific discovery. По введению каждый пункт — отдельное быстрое суждение, а не просьба «оцени статью целиком».</p>
+        <div class="body">
+        <table class="fit">
+          <thead><tr><th>Решение в документации</th><th>Заявленный смысл</th><th>Контур Luke</th></tr></thead>
+          <tbody>
+            <tr><td>Скрининг по включению и исключению</td><td>Один и тот же критерий на каждую статью</td><td>Ближе всего фильтр Fact Search. Отдельного PRISMA-контура нет</td></tr>
+            <tr><td>Разметка пассажа заданной темой</td><td>Категория вместо пересказа</td><td>Тема фрагмента до сводки</td></tr>
+            <tr><td>Цитата поддерживает тезис</td><td>Подтверждение отделяется от противоречия</td><td>validate_citations и предложения сводки</td></tr>
+            <tr><td>Дыра в методе</td><td>Нет контроля, данных или условий опыта</td><td>Peer review, noul до текста рецензии</td></tr>
+            <tr><td>Связь статей с пассажем-опорой</td><td>Ребро графа можно проверить</td><td>Позже. Графа, на который это сесть, нет</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Это наш экземпляр cookbook Re-ranking. Эффект 5% → 18% подписать как CLERC. Три правки — конкретное продолжение, не новый продукт.">
+        <p class="kicker">Luke · 17 / 20</p>
+        <h2>Fact Search уже вызывает Jev</h2>
+        <div class="flow">
+          <span>LitSense</span>
+          <span>Карточка PubMed</span>
+          <span>Дата, доказательность, квартиль, сходство</span>
+          <span class="hot">Jev</span>
+          <span>Сводка Qwen</span>
+        </div>
+        <div class="body">
+        <p>До 60 фрагментов, отдельный state на каждый: запрос, заголовок, фрагмент до 800 знаков. Choice отсекает «нет» при P(no) ≥ 0.8. Score 0…9 переводится в балл 1…10, порог по умолчанию 7. Без ключа список остаётся прежним. Это тот же приём, что cookbook Re-ranking: модель переставляет уже собранный шортлист.</p>
+        <div class="grid g3 fill">
+          <article class="card"><strong>1. Confidence у yes</strong><p>Введение отдаёт confidence коду, чтобы тот решал, действовать ли. Сейчас метка yes сразу становится баллом 10, даже если распределение размазано, как technical при 0.78 в Quick start.</p></article>
+          <article class="card"><strong>2. Один POST</strong><p>Choice и score — два вопроса к одному state. Документация считает их параллельно и изолированно. Сейчас это два последовательных вызова, и state оплачивается дважды.</p></article>
+          <article class="card"><strong>3. Сбой одного фрагмента</strong><p>Код остаётся хозяином потока. Если не ответил весь сервис, список сохраняется. Если сорвался один фрагмент, он сейчас молча выпадает. Его нужно оставлять.</p></article>
+        </div>
+        <div class="grid g4">
+          <div class="stat"><b>60 state</b><span>Свой state на фрагмент: запрос, заголовок до 200 знаков, текст до 800</span></div>
+          <div class="stat"><b>8 воркеров</b><span>Пачка вызовов, таймаут 30 секунд. Срыв одного фрагмента сейчас его выбрасывает</span></div>
+          <div class="stat"><b>Два вопроса</b><span>yes / close / no и score 0…9 относятся к одному state и по введению едут одним POST</span></div>
+          <div class="stat"><b>Пороги кода</b><span>P(no) ≥ 0.8 и балл 7 — наши коэффициенты. Модель их не выбирает</span></div>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Порядок фиксированный. Пустую выдачу по гипотезе решает код: отсутствие фрагментов не означает новизну.">
+        <p class="kicker">Luke · 18 / 20</p>
+        <h2>Следующие контуры, по очереди</h2>
+        <div class="body">
+        <div class="grid g2 fill">
+          <ol class="steps">
+            <li><b>Цитаты.</b> Код проверяет, что строка есть в источнике. Choice: supports, contradicts или says_nothing. Текст рецензии пишет Qwen. Старт порога — confidence 0.8, затем замер на своих парах.</li>
+            <li><b>Сводка Fact Search.</b> Noul на каждое предложение: тезис есть во фрагменте с этой скобкой. Русский абзац остаётся у Qwen.</li>
+            <li><b>Судья гипотез.</b> Два score, novelty и support, и choice статуса доказательств. Пустую выдачу решает код.</li>
+            <li><b>Критика гипотез.</b> Два noul: уже опубликовано и можно проверить экспериментом. Обоснование на русском пишет Qwen.</li>
+          </ol>
+          <article class="card">
+            <strong>Как введение предлагает это собирать</strong>
+            <p>Не спрашивать «хороша ли гипотеза». Это несколько факторов сразу. Novelty, support и проверяемость — отдельные вопросы. Веса и пороги живут в коде: когда приоритет сменится, меняется коэффициент, а не промпт.</p>
+            <p>Свободный текст плана исследования можно переводить choice в тип дизайна, а дальше работает уже написанный route_recipe. Сам роутер Stats Copilot не заменяем: это арифметика и закрытые правила.</p>
+            <p class="sub">Каждый пункт очереди — одно быстрое суждение. Текст после шлагбаума по-прежнему пишет Qwen.</p>
+          </article>
+        </div>
+        <div class="grid g4">
+          <div class="stat"><b>choice</b><span>Цитата: supports, contradicts, says_nothing. Уверенность решает, публиковать ли вердикт</span></div>
+          <div class="stat"><b>noul</b><span>Предложение сводки: тезис есть в фрагменте со скобкой. Порог по цене ложного да</span></div>
+          <div class="stat"><b>два score</b><span>Гипотеза: novelty и support отдельно. Пустая выдача остаётся правилом кода</span></div>
+          <div class="stat"><b>ещё noul</b><span>Критика: уже опубликовано и можно проверить. Русский текст пишет Qwen</span></div>
+        </div>
+        <div class="flow">
+          <span>1. цитата, choice</span>
+          <span>2. сводка, noul</span>
+          <span>3. гипотеза, два score</span>
+          <span>4. критика, два noul</span>
+          <span class="hot">проза остаётся у Qwen</span>
+        </div>
+        <p>Введение требует один gut-check на вопрос. Очередь поэтому разложена по типам: список исходов, верность предложения, две оси гипотезы. Составной вопрос «хороша ли работа» сюда не ставится.</p>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="Jev 1.13 плохо считает и сравнивает даты. Инструкции пишем по-английски. В state только поля вопроса: лишний контекст снижает точность.">
+        <p class="kicker">Luke · 19 / 20</p>
+        <h2>Куда Jev не ставим</h2>
+        <p class="sub">Введение прямо исключает генерацию текста. Остальное следует из того, что вопрос должен быть одним быстрым суждением по тексту.</p>
+        <div class="body">
+        <table>
+          <thead><tr><th>Поверхность</th><th>Почему остаётся как есть</th></tr></thead>
+          <tbody>
+            <tr><td>Writer, Refiner, cover letter, rebuttal, сводка</td><td>Это генерация. Её делает Qwen</td></tr>
+            <tr><td>Мощность, поля, route_recipe</td><td>Закрытая логика и арифметика. Jev 1.13 плохо считает и сравнивает даты</td></tr>
+            <tr><td>Фильтры даты, квартиля, сходства, проверка что PMID существует</td><td>Точный код уже отвечает</td></tr>
+            <tr><td>Картинки peer review</td><td>Вход Jev — только текст. Остаётся vision-модель</td></tr>
+            <tr><td>«Оцени статью» одним вопросом</td><td>Введение просит разложить такой вопрос. Иначе модель взвешивает несколько факторов внутри одного score, и балл нельзя разобрать</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Один score измеряет одну ось. Инструкции и критерии не должны друг другу противоречить. Для choice стоит один раз поменять порядок опций и проверить, что ответ не прилип к первой.</p>
+        <div class="grid g3">
+          <article class="card">
+            <strong>Текст остаётся у LLM</strong>
+            <p>Введение отделяет текст для человека от суждения для программы. Статья, письмо, рецензия и сводка пишутся моделью, которая умеет писать.</p>
+          </article>
+          <article class="card">
+            <strong>Ответ — поле</strong>
+            <p>Choice, score и noul приходят готовыми значениями. Код ветвится по полю. Для этих решений JSON из абзаца больше не нужен.</p>
+          </article>
+          <article class="card">
+            <strong>Одна ось</strong>
+            <p>Несколько факторов спрашиваются отдельно и складываются формулой. Общий балл статьи смешивает оси, и его уже нельзя разобрать.</p>
+          </article>
+        </div>
+        </div>
+      </section>
+
+      <section class="slide grow spread" data-notes="В конце спросить и записать: согласен ли порядок, и кто разметит короткий набор пар тезис–фрагмент.">
+        <p class="kicker">Решение · 20 / 20</p>
+        <h2>После встречи</h2>
+        <div class="body">
+        <div class="grid g3 fill">
+          <article class="card"><strong>1. Fact Search</strong><p>Три правки: confidence у yes, choice и score одним POST, не терять фрагмент при срыве его оценки. Контракт вызова уже описан во введении: state, вопросы, чтение полей ответа.</p></article>
+          <article class="card"><strong>2. Цитаты</strong><p>Форма cookbook Citation check. Порог confidence 0.8 — старт. Код сначала ищет строку в источнике, Jev читает только найденный контекст.</p></article>
+          <article class="card"><strong>3. Свой набор</strong><p>Короткие размеченные пары «тезис — фрагмент». Когда порог снят с этого набора, в <code>data/model.yaml</code> закрепить <code>jev-1.13.0</code> вместо <code>jev-latest</code> и писать в лог <code>model</code> из ответа.</p></article>
+        </div>
+        <p class="ok">Официальные цифры показывают форму выигрыша: шортлист становится точнее, пакет вопросов к одному документу дешевле, неуверенный класс можно откатить на уровень выше. Долю верных цитат в Luke они не предсказывают.</p>
+        <div class="grid g4">
+          <div class="stat"><b>state</b><span>Только поля вопроса. Лишний контекст снижает точность</span></div>
+          <div class="stat"><b>questions</b><span>Атомарные, на английском, без противоречия criteria</span></div>
+          <div class="stat"><b>answers</b><span>Код читает choice, score или noul и сам применяет порог</span></div>
+          <div class="stat"><b>usage</b><span>В Quick start 392 входных токена на три вопроса. Выход бесплатен</span></div>
+        </div>
+        <div class="flow">
+          <span>Quick start — один вызов</span>
+          <span>Primitives — три типа</span>
+          <span>Confidence — действовать ли</span>
+          <span>Patterns — сборка в коде</span>
+        </div>
+        <p>Введение ставит эти четыре страницы следующими. Контракт для Luke тот же: state, атомарные questions, чтение answers, порог в коде. Сначала он применяется к уже живому Fact Search.</p>
+        </div>
+      </section>
+
+      <div class="chrome"><span>Luke.Sechenov.AI · Jev</span><span id="count">1 / 20</span></div>
+      <div class="bar"><i id="bar" style="width: 5%"></i></div>
+    </div>
+  </div>
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const count = document.getElementById("count");
+    const bar = document.getElementById("bar");
+    let index = 0;
+    let notesOn = false;
+
+    function render() {
+      slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+      count.textContent = (index + 1) + " / " + slides.length;
+      bar.style.width = ((index + 1) / slides.length * 100) + "%";
+      let note = document.getElementById("speaker");
+      if (notesOn) {
+        if (!note) {
+          note = document.createElement("div");
+          note.id = "speaker";
+          note.style.cssText = "position:fixed;left:0;right:0;bottom:0;background:#1c2430;color:#f4f7fb;padding:14px 22px;font:15px/1.4 'Avenir Next',sans-serif;z-index:5;";
+          document.body.appendChild(note);
+        }
+        note.textContent = slides[index].dataset.notes || "";
+        note.hidden = false;
+      } else if (note) {
+        note.hidden = true;
+      }
+    }
+
+    function go(next) {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      render();
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === " " || event.key === "PageDown") {
+        event.preventDefault();
+        go(index + 1);
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp" || event.key === "Backspace") {
+        event.preventDefault();
+        go(index - 1);
+      } else if (event.key === "Home") {
+        go(0);
+      } else if (event.key === "End") {
+        go(slides.length - 1);
+      } else if (event.key === "n" || event.key === "N" || event.key === "т" || event.key === "Т") {
+        notesOn = !notesOn;
+        render();
+      }
+    });
+
+    document.getElementById("stage").addEventListener("click", (event) => {
+      const width = event.currentTarget.getBoundingClientRect().width;
+      const x = event.clientX - event.currentTarget.getBoundingClientRect().left;
+      go(x < width * 0.28 ? index - 1 : index + 1);
+    });
+  </script>
+</body>
+</html>
